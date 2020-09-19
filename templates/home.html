@@ -11,19 +11,22 @@
     <title></title>
   </head>
   <body class="bg-dark">
-    <div class="container my-3">
+    <div class="container my-5">
       <div class="row justify-content-center">
         <div class="col-12 col-md-10 col-lg-8">
           <h2 class="text-light font-weight-bold">Download YouTube Files</h2>
           <form action="/ytdl">
             <div class="input-group">
-              <div class="input-group-prepend">
-                <span class="input-group-text text-warning font-weight-bold bg-dark">/watch?v=</span>
-              </div>
               <input type="text" class="form-control bg-light" name="id">
               <div class="input-group-append">
                 <button type="submit" class="btn btn-outline-warning font-weight-bold">Submit</button>
               </div>
+            </div>
+            <div class="form-check mt-3">
+              <input class="form-check-input" type="checkbox" value="" id="concatCheck" name="concat">
+              <label class="form-check-label text-light font-weight-bold" for="concatCheck">
+                Concat VTTs
+              </label>
             </div>
           </form>
         </div>

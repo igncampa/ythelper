@@ -22,7 +22,12 @@ def home():
 
 @app.route('/ytdl')
 def download_files():
-    id = flask.request.args.get('id', None)
+    id = flask.request.args.get('id')
+    if id.startswith('http'):
+        url = id
+        id = url[-11:]
+    else:
+        url = "https://www.youtube.com/watch?v={}".format(id)
 
     with tempfile.TemporaryDirectory() as directory:
         os.chdir(directory)
@@ -36,32 +41,62 @@ def download_files():
         }
 
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.extract_info("https://www.youtube.com/watch?v={}".format(id), download=True)
+            ydl.extract_info(url, download=True)
 
         # webvtt & docx
-        for file in glob.glob("*.vtt"):
+        if flask.request.args.get('concat') != None:
             document = docx.Document()
+            table = document.add_table(rows=1, cols=2)
+            cells = table.rows[0].cells
 
-            vtt = webvtt.read(file)
-            transcript = ""
+            num = 0
+            fname = ""
+            for file in glob.glob("*.vtt"):
 
-            lines = []
-            for line in vtt:
-                lines.extend(line.text.strip().splitlines())
+                vtt = webvtt.read(file)
+                transcript = ""
 
-            prev = None
-            for line in lines:
-                if line == prev:
-                    continue
-                transcript += "\r" + line
-                prev = line
+                lines = []
+                for line in vtt:
+                    lines.extend(line.text.strip().splitlines())
 
-            document.add_paragraph(transcript)
-            document.save("{}.docx".format(file))
+                prev = None
+                for line in lines:
+                    if line == prev:
+                        continue
+                    transcript += line + "\r"
+                    prev = line
+
+                cells[num].text = transcript
+                fname = file
+                num += 1
+
+            document.save("{}.docx".format(fname[:-7]))
+        
+        else:
+            for file in glob.glob("*.vtt"):
+                document = docx.Document()
+
+                vtt = webvtt.read(file)
+                transcript = ""
+
+                lines = []
+                for line in vtt:
+                    lines.extend(line.text.strip().splitlines())
+
+                prev = None
+                for line in lines:
+                    if line == prev:
+                        continue
+                    transcript += line + "\r"
+                    prev = line
+
+                document.add_paragraph(transcript)
+                document.save("{}.docx".format(file))
 
         #zipfile
         files = set(glob.glob("*")) - set(glob.glob("*.vtt"))
-        
+
         with io.BytesIO() as zip_buffer:
             with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
                 for file in files:
