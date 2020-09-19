@@ -22,7 +22,14 @@ def home():
 
 @app.route('/ytdl')
 def download_files():
-    id = flask.request.args.get('id', None)
+    id = flask.request.args.get('id')
+    if id.startswith('http'):
+        url = id
+        id = url[-11:]
+    else:
+        url = "https://www.youtube.com/watch?v={}".format(id)
+
+    flask.request.args.get('audio')
 
     with tempfile.TemporaryDirectory() as directory:
         os.chdir(directory)
@@ -35,8 +42,17 @@ def download_files():
             'skip_download': True,
         }
 
+        if flask.request.args.get('audio') != None:
+            del ydl_opts['skip_download']
+            ydl_opts['format'] = '136'
+            ydl_opts['postprocessors'] = [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '128',
+            }]
+
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.extract_info("https://www.youtube.com/watch?v={}".format(id), download=True)
+            ydl.extract_info(url, download=True)
 
         # webvtt & docx
         for file in glob.glob("*.vtt"):
@@ -61,7 +77,7 @@ def download_files():
 
         #zipfile
         files = set(glob.glob("*")) - set(glob.glob("*.vtt"))
-        
+
         with io.BytesIO() as zip_buffer:
             with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
                 for file in files:
